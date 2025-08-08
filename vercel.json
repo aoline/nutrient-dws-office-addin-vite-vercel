@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "api/build.ts": {
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/build",
+      "dest": "/api/build"
+    }
+  ],
+  "env": {
+    "NUTRIENT_API_KEY": "@nutrient-api-key"
+  }
+}
