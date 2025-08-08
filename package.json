@@ -4,9 +4,9 @@
   "description": "Office Add-in for Nutrient DWS with Vercel deployment",
   "main": "index.js",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "vercel build",
-    "start": "vercel start",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "smoke": "ENDPOINT=http://localhost:3000/api/build ./tests/smoke.sh"
   },
   "dependencies": {
