@@ -9,14 +9,20 @@ This guide covers how to test each part of the Nutrient DWS Office Add-in implem
    npm run dev
    ```
 
-2. **Open the demo page**: http://localhost:3000
+2. **Run comprehensive tests** (automatically detects port):
+   ```bash
+   npm run test:all
+   ```
+
+3. **Open the demo page**: Check server output for the correct port (e.g., `http://localhost:3003`)
 
 ## 📋 Test Checklist
 
 ### ✅ 1. Environment Setup
 - [ ] `.env` file exists with `NUTRIENT_PROCESSOR_API_KEY`
 - [ ] Development server starts without errors
-- [ ] Demo page loads at http://localhost:3000
+- [ ] Demo page loads on the correct port
+- [ ] No TypeScript errors: `npx tsc --noEmit`
 
 ### ✅ 2. API Endpoint Testing
 - [ ] `/api/build` accepts multipart form data
@@ -49,12 +55,29 @@ grep -i nutrient .env
 # NUTRIENT_API_BASE=https://api.nutrient.io
 ```
 
-### 2. API Endpoint Testing
+### 2. Port Detection Test
+
+```bash
+# The test scripts automatically detect the correct port
+npm run test
+
+# For manual testing, check which port the server is using
+lsof -ti:3000,3001,3002,3003
+
+# Or check the server output for:
+# "Local: http://localhost:3003"
+```
+
+### 3. API Endpoint Testing
 
 #### Test with curl (Command Line)
 ```bash
+# Get the correct port first
+PORT=$(lsof -ti:3000,3001,3002,3003 | head -1)
+echo "Testing on port: $PORT"
+
 # Test with real DOCX file
-curl -X POST http://localhost:3000/api/build \
+curl -X POST http://localhost:$PORT/api/build \
   -F "file=@tests/fixtures/Sample.docx" \
   -F "instructions={\"parts\":[{\"file\":\"file\"}],\"output\":{\"type\":\"pdf\"}}" \
   --output /tmp/test-output.pdf \
@@ -73,26 +96,27 @@ ls -la /tmp/test-output.pdf
 #### Test with different files
 ```bash
 # Test with placeholder file
-curl -X POST http://localhost:3000/api/build \
+curl -X POST http://localhost:$PORT/api/build \
   -F "file=@tests/fixtures/sample.docx" \
   -F "instructions={\"parts\":[{\"file\":\"file\"}],\"output\":{\"type\":\"pdf\"}}" \
   --output /tmp/placeholder-output.pdf
 
 # Test error handling (missing file)
-curl -X POST http://localhost:3000/api/build \
+curl -X POST http://localhost:$PORT/api/build \
   -F "instructions={\"parts\":[{\"file\":\"file\"}],\"output\":{\"type\":\"pdf\"}}" \
   -v
 
 # Expected: HTTP 400 with "Missing file in request"
 ```
 
-### 3. Demo Page Testing
+### 4. Demo Page Testing
 
 #### Manual Testing Steps
-1. **Open browser**: http://localhost:3000
-2. **Verify logo**: Should display in top-left corner
-3. **Check page layout**: Modern design with proper spacing
-4. **Test demo button**:
+1. **Check server output** for the correct port (e.g., `http://localhost:3003`)
+2. **Open browser**: Navigate to the correct port
+3. **Verify logo**: Should display in top-left corner
+4. **Check page layout**: Modern design with proper spacing
+5. **Test demo button**:
    - Click "Run Demo"
    - Watch for loading state ("🔄 Processing...")
    - Verify success message appears
@@ -128,10 +152,10 @@ fetch('/api/build', {
 });
 ```
 
-### 4. Smoke Test
+### 5. Smoke Test
 
 ```bash
-# Run the automated smoke test
+# Run the automated smoke test (automatically detects port)
 npm run smoke
 
 # Expected output:
@@ -139,7 +163,7 @@ npm run smoke
 # OK application/pdf 52495
 ```
 
-### 5. Error Handling Tests
+### 6. Error Handling Tests
 
 #### Test missing API key
 ```bash
@@ -147,7 +171,7 @@ npm run smoke
 mv .env .env.backup
 
 # Test API (should return mock PDF)
-curl -X POST http://localhost:3000/api/build \
+curl -X POST http://localhost:$PORT/api/build \
   -F "file=@tests/fixtures/Sample.docx" \
   -F "instructions={\"parts\":[{\"file\":\"file\"}],\"output\":{\"type\":\"pdf\"}}" \
   --output /tmp/mock-output.pdf
@@ -158,7 +182,7 @@ mv .env.backup .env
 
 #### Test invalid JSON
 ```bash
-curl -X POST http://localhost:3000/api/build \
+curl -X POST http://localhost:$PORT/api/build \
   -F "file=@tests/fixtures/Sample.docx" \
   -F "instructions=invalid-json" \
   -v
@@ -168,7 +192,7 @@ curl -X POST http://localhost:3000/api/build \
 
 #### Test missing required fields
 ```bash
-curl -X POST http://localhost:3000/api/build \
+curl -X POST http://localhost:$PORT/api/build \
   -F "file=@tests/fixtures/Sample.docx" \
   -v
 
@@ -182,7 +206,7 @@ curl -X POST http://localhost:3000/api/build \
 #### Test FormData parsing
 ```bash
 # Test with minimal valid data
-curl -X POST http://localhost:3000/api/build \
+curl -X POST http://localhost:$PORT/api/build \
   -F "file=@tests/fixtures/Sample.docx" \
   -F "instructions={\"parts\":[{\"file\":\"file\"}],\"output\":{\"type\":\"pdf\"}}" \
   -H "Content-Type: multipart/form-data" \
@@ -204,7 +228,7 @@ curl -X POST http://localhost:3000/api/build \
 ls -la public/logo.jpeg
 
 # Test logo URL in browser
-curl -I http://localhost:3000/logo.jpeg
+curl -I http://localhost:$PORT/logo.jpeg
 # Expected: HTTP 200
 ```
 
@@ -245,20 +269,33 @@ ls -la tests/fixtures/
 du -h tests/fixtures/Sample.docx
 ```
 
+#### Port detection issues
+```bash
+# Check which ports are in use
+lsof -ti:3000,3001,3002,3003
+
+# Kill processes if needed
+kill -9 $(lsof -ti:3000,3001,3002,3003)
+
+# Start server again
+npm run dev
+```
+
 ### Debug Commands
 
 ```bash
 # Check all environment variables
 cat .env
 
-# Check API endpoint directly
-curl -v http://localhost:3000/api/build
+# Check API endpoint directly (with correct port)
+PORT=$(lsof -ti:3000,3001,3002,3003 | head -1)
+curl -v http://localhost:$PORT/api/build
 
 # Check if files exist
 find tests/fixtures -type f -name "*.docx" -o -name "*.pdf"
 
 # Check server status
-curl -s http://localhost:3000 | head -10
+curl -s http://localhost:$PORT | head -10
 ```
 
 ## 📊 Performance Testing
@@ -266,8 +303,9 @@ curl -s http://localhost:3000 | head -10
 ### Load Testing
 ```bash
 # Test with multiple concurrent requests
+PORT=$(lsof -ti:3000,3001,3002,3003 | head -1)
 for i in {1..5}; do
-  curl -X POST http://localhost:3000/api/build \
+  curl -X POST http://localhost:$PORT/api/build \
     -F "file=@tests/fixtures/Sample.docx" \
     -F "instructions={\"parts\":[{\"file\":\"file\"}],\"output\":{\"type\":\"pdf\"}}" \
     --output /tmp/test-$i.pdf &
@@ -278,7 +316,8 @@ wait
 ### Response Time Testing
 ```bash
 # Measure response time
-time curl -X POST http://localhost:3000/api/build \
+PORT=$(lsof -ti:3000,3001,3002,3003 | head -1)
+time curl -X POST http://localhost:$PORT/api/build \
   -F "file=@tests/fixtures/Sample.docx" \
   -F "instructions={\"parts\":[{\"file\":\"file\"}],\"output\":{\"type\":\"pdf\"}}" \
   --output /tmp/timing-test.pdf
@@ -294,6 +333,7 @@ time curl -X POST http://localhost:3000/api/build \
 - [ ] Logo displays correctly
 - [ ] Error handling works for invalid requests
 - [ ] Smoke test passes
+- [ ] Port detection works correctly
 
 ### Nice to Have
 - [ ] Response time < 15 seconds
@@ -311,14 +351,37 @@ git checkout main
 # Verify main branch is stable
 npm run dev
 
-# Test that main branch works
-curl -X POST http://localhost:3000/api/build \
+# Test that main branch works (with correct port)
+PORT=$(lsof -ti:3000,3001,3002,3003 | head -1)
+curl -X POST http://localhost:$PORT/api/build \
   -F "file=@tests/fixtures/Sample.docx" \
   -F "instructions={\"parts\":[{\"file\":\"file\"}],\"output\":{\"type\":\"pdf\"}}" \
   --output /tmp/main-test.pdf
 
 # Switch back to feature branch
 git checkout feature/api-build-proxy
+```
+
+## 🔧 Test Script Features
+
+The automated test script (`scripts/test.sh`) includes:
+
+1. **Smart Port Detection**: Automatically finds the correct port (3000-3010)
+2. **Comprehensive Coverage**: Tests all major components
+3. **Clear Output**: Color-coded results with detailed messages
+4. **Error Diagnostics**: Helpful error messages for common issues
+5. **Automatic Cleanup**: Cleans up temporary files
+
+### Running Tests
+```bash
+# Run all tests (automatically detects port)
+npm run test:all
+
+# Run comprehensive tests only
+npm run test
+
+# Run smoke test only
+npm run smoke
 ```
 
 This testing guide ensures you can thoroughly test each component of the implementation before deploying to production.

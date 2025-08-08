@@ -8,6 +8,7 @@ A Vercel-based serverless API for DOCX→PDF conversion using the Nutrient Proce
 - **Demo Mode**: Web interface for testing without external accounts
 - **Automatic Validation**: Ensures PDF output is > 10 KB
 - **Error Handling**: Comprehensive error responses and logging
+- **Smart Port Detection**: Automatically detects the correct port for testing
 
 ## Quick Start
 
@@ -26,17 +27,17 @@ A Vercel-based serverless API for DOCX→PDF conversion using the Nutrient Proce
    ```bash
    npm run dev
    ```
+   
+   **Note**: The server may start on a different port (3000, 3001, 3002, etc.) if the default port is in use. The test scripts will automatically detect the correct port.
 
 4. **Test the API**:
    ```bash
-   # Using curl
-   curl -X POST http://localhost:3000/api/build \
-     -F "file=@tests/fixtures/sample.docx" \
-     -F "instructions={\"parts\":[{\"file\":\"file\"}],\"output\":{\"type\":\"pdf\"}}" \
-     --output output.pdf
+   # Run comprehensive tests (automatically detects port)
+   npm run test:all
    
-   # Or use the demo page
-   open http://localhost:3000
+   # Or test individually
+   npm run smoke    # API endpoint test
+   npm run test     # Comprehensive tests
    ```
 
 ## API Endpoints
@@ -59,8 +60,12 @@ Converts a DOCX file to PDF using the Nutrient Processor API.
 
 **Example**:
 ```bash
-curl -X POST https://your-domain.vercel.app/api/build \
-  -F "file=@document.docx" \
+# Test with curl (port will be auto-detected by test scripts)
+npm run test
+
+# Manual testing (check port first)
+curl -X POST http://localhost:$(lsof -ti:3000,3001,3002,3003 | head -1)/api/build \
+  -F "file=@tests/fixtures/Sample.docx" \
   -F "instructions={\"parts\":[{\"file\":\"file\"}],\"output\":{\"type\":\"pdf\"}}" \
   --output output.pdf
 ```
@@ -74,8 +79,12 @@ curl -X POST https://your-domain.vercel.app/api/build \
 │   └── build.ts          # Main API endpoint
 ├── pages/
 │   └── index.tsx         # Demo page
+├── public/
+│   └── logo.jpeg         # Project logo
+├── scripts/
+│   └── test.sh           # Automated testing script
 ├── tests/
-│   ├── fixtures/         # Test files
+│   ├── fixtures/         # Test files (Sample.docx, Sample.pdf)
 │   └── smoke.sh          # Smoke test
 ├── docs/                 # Documentation
 ├── vercel.json           # Vercel configuration
@@ -84,10 +93,44 @@ curl -X POST https://your-domain.vercel.app/api/build \
 
 ### Testing
 
-Run the smoke test:
+#### Automated Testing
 ```bash
+# Run all tests (automatically detects port)
+npm run test:all
+
+# Run comprehensive tests
+npm run test
+
+# Run smoke test only
 npm run smoke
 ```
+
+#### Manual Testing
+```bash
+# 1. Start the server
+npm run dev
+
+# 2. Check which port the server is running on
+# Look for output like: "Local: http://localhost:3003"
+
+# 3. Test the API endpoint
+curl -X POST http://localhost:3003/api/build \
+  -F "file=@tests/fixtures/Sample.docx" \
+  -F "instructions={\"parts\":[{\"file\":\"file\"}],\"output\":{\"type\":\"pdf\"}}" \
+  --output test-output.pdf
+
+# 4. Verify the result
+file test-output.pdf
+ls -la test-output.pdf  # Should be > 10 KB
+```
+
+#### Testing Checklist
+- [ ] Server starts without errors
+- [ ] API endpoint responds (check port detection)
+- [ ] PDF output > 10 KB
+- [ ] Demo page loads with logo
+- [ ] Error handling works
+- [ ] All automated tests pass
 
 ### Deployment
 
@@ -125,7 +168,37 @@ The demo page (`/`) allows testing without external accounts:
 
 ## Environment Variables
 
-- `NUTRIENT_API_KEY`: Your Nutrient Processor API key (required)
+- `NUTRIENT_PROCESSOR_API_KEY`: Your Nutrient Processor API key (required)
+
+## Troubleshooting
+
+### Port Issues
+If you encounter port conflicts:
+```bash
+# Check which ports are in use
+lsof -ti:3000,3001,3002,3003
+
+# Kill processes if needed
+kill -9 $(lsof -ti:3000,3001,3002,3003)
+
+# Start server again
+npm run dev
+```
+
+### API Endpoint Not Found
+If you get 404 errors:
+1. Check if the server is running on the correct port
+2. Verify the API route is properly configured
+3. Check for Next.js app directory vs pages directory conflicts
+
+### Testing Issues
+```bash
+# Run tests with verbose output
+npm run test
+
+# Check server status
+curl -s http://localhost:$(lsof -ti:3000,3001,3002,3003 | head -1) | head -5
+```
 
 ## License
 
