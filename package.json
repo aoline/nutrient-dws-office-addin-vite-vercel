@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "smoke": "ENDPOINT=http://localhost:3000/api/build ./tests/smoke.sh"
+    "smoke": "ENDPOINT=http://localhost:3000/api/build ./tests/smoke.sh",
+    "test": "./scripts/test.sh",
+    "test:all": "npm run smoke && npm run test"
   },
   "dependencies": {
     "next": "^14.0.0",
